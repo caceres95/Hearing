@@ -163,7 +163,6 @@ void loop() {
         analogWrite(5, accel);
       }
     }
-   
-   }
+   } 
    
  }
