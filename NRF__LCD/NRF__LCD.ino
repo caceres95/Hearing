@@ -26,9 +26,6 @@ float datos[3];
 void setup() {
   // Definimos la LCD con dimension 2x16 y definimos los caracteres que deben salir en las filas:
   lcd.begin(16,2);
-  //lcd.print("C=      K=");
-  //lcd.setCursor(0,1);
-  //lcd.print("Temperatura");
 
   //inicializamos el NRF24L01
   radio.begin();
@@ -51,20 +48,19 @@ void loop() {
 
     //Recibir datos de RC
     uint8_t numero_canal;
-    //if ( radio.available(&numero_canal) )
+    
     if ( radio.available() )
     {
       //Leemos los datos y los guardamos en la variable datos[]
       radio.read(datos, sizeof(datos));
 
       //reportamos por el puerto serial los datos recibidos
-      //Serial.print("Dato0= " );
       Serial.print(datos[0]);
       Serial.print(", ");
-      //Serial.print("Dato1= " );
+      
       Serial.print(datos[1]);
       Serial.print(", ");
-      //Serial.print("Dato2= " );
+      
       Serial.println(datos[2]);
     }
     else
@@ -72,12 +68,12 @@ void loop() {
       Serial.println("No hay datos de radio disponibles");
     }
     
-    if(((datos[0] < 1 && datos[0] > -1) && (xy)) || ((datos[1] > -1 && datos[1] < 1)) && (xy == false))
+    if(((datos[0] < 1 && datos[0] > -1) && (xy)) || ((datos[1] > -1 && datos[1] < 1)) && (!xy))
     {
       lcd.clear();
     }
 
-    if(datos[0] > 1)    //Carro Retrocede
+    if(datos[0] > 1)    
     {
       lcd.setCursor(0,0);
       lcd.print("me");

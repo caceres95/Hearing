@@ -1,5 +1,3 @@
-// Arduino and Processing codes are available to download - link below the video.
-
 /* Connection pins:
 Arduino     MARG MPU-9150
   A5            SCL
