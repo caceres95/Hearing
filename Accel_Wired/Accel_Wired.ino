@@ -112,9 +112,9 @@ void loop() {
 
     // Crea arreglos de char donde almacenar separados los valores
     char y[5], z[5], x[5], coma = ',';
-    dtostrf(datos[0], 4, 2, y);
-    dtostrf(datos[1], 4, 2, z);
-    dtostrf(datos[2], 4, 2, x);
+    dtostrf(datos[0], 4, 2, x);
+    dtostrf(datos[1], 4, 2, y);
+    dtostrf(datos[2], 4, 2, z);
 
     Wire.beginTransmission(16); // transmit to device #16
 
