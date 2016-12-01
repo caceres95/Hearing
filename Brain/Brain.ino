@@ -1,7 +1,5 @@
-#include <SoftI2CMaster.h>
-#include <SoftWire.h>
-
 #include <LiquidCrystal.h>
+#include <Wire.h>
 #include <SoftwareSerial.h> //Librería que permite establecer comunicación serie en otros pins
 #include <SPI.h>
 #include <nRF24L01.h> //Librería conexión inalámbrica
@@ -9,6 +7,11 @@
 //Declaremos los pines CE y el CSN
 #define CE_PIN 9
 #define CSN_PIN 10
+
+// Maximum number of substrings expected
+const int MAX_SUBSTRINGS = 3;
+// Array of pointers to each substring after displayString() has been called
+static char* substrings[MAX_SUBSTRINGS];
 
 //Variable con la dirección del canal que se va a leer
 byte direccion[5] = {'c', 'a', 'n', 'a', 'l'};
@@ -43,32 +46,39 @@ void setup() {
 
   //empezamos a escuchar por el canal
   radio.startListening();
+
+  //Wired Setup!!
+  Wire.begin(16);                // join i2c bus with address #8
+  Wire.onReceive(receiveEvent); // register event
 }
 
-
 void loop() {
-/*
-  int contador = 0;
-  
-  //Leer datos mano Derecha, conectada por cable y guardarlos en arreglo datosDer[]
-  while (Serial.available() && contador < 3) {  /* read the most recent byte
-    byteRead = Serial.read();     //now byteRead will have latest sensor
-    // data sent from Arduino1
-    datosDer[contador] = byteRead;
-    contador = contador + 1;
+  delay(10);
+}
 
-  }
-*/
+void radioDatos()
+{
+  /*
+    int contador = 0;
 
-  //Recibir datos de RC
+    //Leer datos mano Derecha, conectada por cable y guardarlos en arreglo datosDer[]
+    while (Serial.available() && contador < 3) {  /* read the most recent byte
+      byteRead = Serial.read();     //now byteRead will have latest sensor
+      // data sent from Arduino1
+      datosDer[contador] = byteRead;
+      contador = contador + 1;
+
+    }
+  */
+
   uint8_t numero_canal;
 
-  if ( radio.available() ) {
+//  if ( radio.available() ) {
     //Leer datos mano Izquierda, conectada inalambrica y guardarlos en arreglo datosIzq[]
     radio.read(datosIzq, sizeof(datosIzq));
 
     //Leer datos mano Derecha, conectada por cable y guardarlos en arreglo datosDer[]
-
+    Serial.println("++++++++++++++++++++++ Inalambrico");
     //reportamos por el puerto serial los datos recibidos de la mano Izquierda
     Serial.print(datosIzq[0]);
     Serial.print(", ");
@@ -79,23 +89,72 @@ void loop() {
     Serial.println(datosIzq[2]);
 
     //reportamos por el puerto serial los datos recibidos de la mano Derecha
-    Serial.print(datosDer[0]);
-    Serial.print(", ");
+//    Serial.print(datosDer[0]);
+//    Serial.print(", ");
+//
+//    Serial.print(datosDer[1]);
+//    Serial.print(", ");
+//
+//    Serial.println(datosDer[2]);
 
-    Serial.print(datosDer[1]);
-    Serial.print(", ");
+//  }
+//  else {
+//    Serial.println("No hay datos de radio disponibles");
+//  }
 
-    Serial.println(datosDer[2]);
-
-  }
-  else {
-    Serial.println("No hay datos de radio disponibles");
-  }
-
-  interpretaDatos();
-
-  delay(1000);
+  //interpretaDatos();
 }
+
+// function that executes whenever data is received from master
+// this function is registered as an event, see setup()
+void receiveEvent(int howMany) {
+  String arrValores = "";
+  int i = 0;
+  while (0 < Wire.available()) { // loop through all but the last
+    char c = Wire.read(); // receive byte as a character
+    arrValores.concat(c);
+    i++;
+    //Serial.print(c);         // print the character
+  }
+  
+  char arrnuevo[i + 1];
+
+  arrValores.toCharArray(arrnuevo, i + 1);
+
+  displayString(arrnuevo);
+
+  float x = atof(substrings[0]);
+  float y = atof(substrings[1]);
+  float z = atof(substrings[2]);
+
+  Serial.println("-------------- Alambrico");
+  Serial.print(x);
+  Serial.print(", ");
+  Serial.print(y);
+  Serial.print(", ");
+  Serial.print(z);
+  Serial.println();
+
+  radioDatos();
+  
+  delay(100);
+}
+
+
+void displayString(char* s) {
+  // First clear the array of substrings
+  for (int i = 0; i < MAX_SUBSTRINGS; i++)
+    substrings[i] = 0;
+  // Now split the input string
+  char* text = strtok(s, ",");
+  int i = 0;
+  while (text != 0 && i < MAX_SUBSTRINGS) {
+    // A toekn was found: append it to the array of substrings
+    substrings[i++] = text;
+    text = strtok(0, ",");
+  }
+}
+
 
 void interpretaDatos() {
   //Posicion Inicial, borra todo
@@ -105,6 +164,7 @@ void interpretaDatos() {
     lcd.clear();
     Serial.println("Neutral");
   }
+
 
   //Mano Izquierda en posicion de Abajo, datosIzq[0] es positivo
   if (datosIzq[0] > 1) {
@@ -318,4 +378,3 @@ void interpretaDatos() {
     }
   }
 }
-

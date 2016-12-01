@@ -38,6 +38,7 @@ Arduino     MARG MPU-9150
 #include <inv_mpu.h>
 #include <inv_mpu_dmp_motion_driver.h>
 #include <EEPROM.h>
+#include <stdlib.h>
 
 //Para enviar datos
 #include <SPI.h>
@@ -83,8 +84,7 @@ MPU9150Lib MPU;                                              // the MPU object
 //vector con los datos a enviar
 float datos[3];
 
-void setup()
-{ 
+void setup() { 
   Serial.begin(SERIAL_PORT_SPEED);
  // Serial.print("Arduino9150 starting using device "); Serial.println(DEVICE_TO_USE);
   Wire.begin();
@@ -92,29 +92,52 @@ void setup()
   MPU.init(MPU_UPDATE_RATE, MPU_MAG_MIX_GYRO_AND_MAG, MAG_UPDATE_RATE, MPU_LPF_RATE);   // start the MPU
 }
 
-void loop()
-{  
+void loop() {  
   //MPU.selectDevice(DEVICE_TO_USE);                         // only needed if device has changed since init but good form anyway
   if (MPU.read()) {                                        // get the latest data if ready yet
-//  MPU.printQuaternion(MPU.m_rawQuaternion);              // print the raw quaternion from the dmp
-//  MPU.printVector(MPU.m_rawMag);                         // print the raw mag data
-//  MPU.printVector(MPU.m_rawAccel);                       // print the raw accel data
-//  MPU.printAngles(MPU.m_dmpEulerPose);                   // the Euler angles from the dmp quaternion
-//  MPU.printVector(MPU.m_calAccel);                       // print the calibrated accel data
-//  MPU.printVector(MPU.m_calMag);                         // print the calibrated mag data
-    //MPU.printAngles(MPU.m_fusedEulerPose);                 // print the output of the data fusion
+    //  MPU.printQuaternion(MPU.m_rawQuaternion);              // print the raw quaternion from the dmp
+    //  MPU.printVector(MPU.m_rawMag);                         // print the raw mag data
+    //  MPU.printVector(MPU.m_rawAccel);                       // print the raw accel data
+    //  MPU.printAngles(MPU.m_dmpEulerPose);                   // the Euler angles from the dmp quaternion
+    //  MPU.printVector(MPU.m_calAccel);                       // print the calibrated accel data
+    //  MPU.printVector(MPU.m_calMag);                         // print the calibrated mag data
+    //  MPU.printAngles(MPU.m_fusedEulerPose);                 // print the output of the data fusion
 
+    // Lee la variable Y (Arriba+/Abajo-)
     datos[0]= MPU.m_dmpEulerPose[0];
+    // Lee la variable Z (GiraDer+/GiraIzq-)
     datos[1]= MPU.m_dmpEulerPose[1];
+    // Lee la varaible X (Izq+/Der-)
     datos[2]= MPU.m_dmpEulerPose[2];
 
-    Serial.print(datos[0]); //Serial.print(",");
+    // Crea arreglos de char donde almacenar separados los valores
+    char y[5], z[5], x[5], coma = ',';
+    dtostrf(datos[0], 4, 2, y);
+    dtostrf(datos[1], 4, 2, z);
+    dtostrf(datos[2], 4, 2, x);
+
+    Wire.beginTransmission(16); // transmit to device #16
+
+    // Manda el valor del eje X
+    Wire.write(x); 
+    // Manda el delimintador
+    Wire.write(coma);
+    // Manda el valor del eje Y
+    Wire.write(y); 
+    // Manda el delimintador
+    Wire.write(coma);
+    // Manda el valor del eje Z
+    Wire.write(z); 
+
+    Wire.endTransmission();    // stop transmitting
+
+    Serial.print(x);
     Serial.print(",");
-    Serial.print(datos[1]); //Serial.print(",");
+    Serial.print(y);
     Serial.print(",");
-    Serial.print(datos[2]); //Serial.println(",");
+    Serial.print(z);
     Serial.println(); 
-    
+    //delay(100);
   } 
 }
 
