@@ -136,6 +136,7 @@ void receiveEvent(int howMany) {
   Serial.println();
 
   radioDatos();
+  interpretaDatos();
   
   delay(100);
 }
