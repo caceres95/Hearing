@@ -25,6 +25,7 @@ LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 //Valida cuak posicion esta activa
 bool validaPos[3] = {false, false, false};
+bool validaPosDerecha[3] = {false, false, false};
 
 int byteRead;
 
@@ -53,30 +54,15 @@ void setup() {
 }
 
 void loop() {
-  delay(10);
+  delay(1000);
 }
 
-void radioDatos()
-{
-  /*
-    int contador = 0;
-
-    //Leer datos mano Derecha, conectada por cable y guardarlos en arreglo datosDer[]
-    while (Serial.available() && contador < 3) {  /* read the most recent byte
-      byteRead = Serial.read();     //now byteRead will have latest sensor
-      // data sent from Arduino1
-      datosDer[contador] = byteRead;
-      contador = contador + 1;
-
-    }
-  */
+void radioDatos() {
 
   uint8_t numero_canal;
-
-//  if ( radio.available() ) {
     //Leer datos mano Izquierda, conectada inalambrica y guardarlos en arreglo datosIzq[]
     radio.read(datosIzq, sizeof(datosIzq));
-
+    
     //Leer datos mano Derecha, conectada por cable y guardarlos en arreglo datosDer[]
     Serial.println("++++++++++++++++++++++ Inalambrico");
     //reportamos por el puerto serial los datos recibidos de la mano Izquierda
@@ -87,34 +73,19 @@ void radioDatos()
     Serial.print(", ");
 
     Serial.println(datosIzq[2]);
-
-    //reportamos por el puerto serial los datos recibidos de la mano Derecha
-//    Serial.print(datosDer[0]);
-//    Serial.print(", ");
-//
-//    Serial.print(datosDer[1]);
-//    Serial.print(", ");
-//
-//    Serial.println(datosDer[2]);
-
-//  }
-//  else {
-//    Serial.println("No hay datos de radio disponibles");
-//  }
-
-  //interpretaDatos();
 }
 
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
 void receiveEvent(int howMany) {
+
+  delay(1000);
   String arrValores = "";
   int i = 0;
   while (0 < Wire.available()) { // loop through all but the last
     char c = Wire.read(); // receive byte as a character
     arrValores.concat(c);
     i++;
-    //Serial.print(c);         // print the character
   }
   
   char arrnuevo[i + 1];
@@ -127,6 +98,10 @@ void receiveEvent(int howMany) {
   float y = atof(substrings[1]);
   float z = atof(substrings[2]);
 
+  datosDer[0] = x;
+  datosDer[1] = y;
+  datosDer[2] = z;
+
   Serial.println("-------------- Alambrico");
   Serial.print(x);
   Serial.print(", ");
@@ -138,7 +113,7 @@ void receiveEvent(int howMany) {
   radioDatos();
   interpretaDatos();
   
-  delay(100);
+  delay(1000);
 }
 
 
@@ -158,17 +133,18 @@ void displayString(char* s) {
 
 
 void interpretaDatos() {
-  //Posicion Inicial, borra todo
-  if (((datosIzq[0] < 1 && datosIzq[0] > -1) && (validaPos[0])) ||
-      (((datosIzq[1] < 1 && datosIzq[1] > -1)) && (validaPos[1])) ||
-      (((datosIzq[2] < 1 && datosIzq[2] > -1)) && (validaPos[2]))) {
+  //Posicion Inicial Mano Izq (inalambrica) en neutral, borra todo
+  if (((datosIzq[0] < 1 && datosIzq[0] > -1) && !(validaPos[0])) &&
+      ((datosIzq[1] < 1 && datosIzq[1] > -1) && !(validaPos[1])) &&
+      ((datosIzq[2] < 1 && datosIzq[2] > -1) && !(validaPos[2]))) {
     lcd.clear();
-    Serial.println("Neutral");
+    Serial.print("Neutral y ");
+    
+    interpretaManoDerecha();
   }
 
-
   //Mano Izquierda en posicion de Abajo, datosIzq[0] es positivo
-  if (datosIzq[0] > 1) {
+  else if (datosIzq[0] > 1) {
     lcd.setCursor(0, 0);
     lcd.print("Abajo");
     Serial.print("Abajo y ");
@@ -178,28 +154,7 @@ void interpretaDatos() {
     validaPos[1] = false;
     validaPos[2] = false;
 
-    if (((datosDer[0] < 1 && datosDer[0] > -1)) || (((datosDer[1] > -1 && datosDer[1] < 1))) || (((datosDer[2] > -1 && datosDer[2] < 1)))) {
-      lcd.clear();
-      Serial.println("Neutral");
-    }
-    if (datosDer[0] > 1) {
-      Serial.println("Abajo");
-    }
-    else if (datosDer[0] < -1) {
-      Serial.println("Arriba");
-    }
-    else if (datosDer[1] > 1) {
-      Serial.println("GiraIzq");
-    }
-    else if (datosDer[1] < -1) {
-      Serial.println("GiraDer");
-    }
-    else if (datosDer[2] > 1) {
-      Serial.println("Izq");
-    }
-    else if (datosDer[2] < -1) {
-      Serial.println("Der");
-    }
+    interpretaManoDerecha();
   }
   //Mano Izquierda en posicion de Arriba, datosIzq[0] es negativo
   else if (datosIzq[0] < -1)
@@ -213,28 +168,7 @@ void interpretaDatos() {
     validaPos[1] = false;
     validaPos[2] = false;
 
-    if (((datosDer[0] < 1 && datosDer[0] > -1)) || (((datosDer[1] > -1 && datosDer[1] < 1))) || (((datosDer[2] > -1 && datosDer[2] < 1)))) {
-      lcd.clear();
-      Serial.println("Neutral");
-    }
-    if (datosDer[0] > 1) {
-      Serial.println("Abajo");
-    }
-    else if (datosDer[0] < -1) {
-      Serial.println("Arriba");
-    }
-    else if (datosDer[1] > 1) {
-      Serial.println("GiraIzq");
-    }
-    else if (datosDer[1] < -1) {
-      Serial.println("GiraDer");
-    }
-    else if (datosDer[2] > 1) {
-      Serial.println("Izq");
-    }
-    else if (datosDer[2] < -1) {
-      Serial.println("Der");
-    }
+    interpretaManoDerecha();
   }
   //Mano Izquierda en posicion de GiraIzq, datosIzq[1] es positivo
   else if (datosIzq[1] > 1)
@@ -248,28 +182,7 @@ void interpretaDatos() {
     validaPos[1] = true;
     validaPos[2] = false;
 
-    if (((datosDer[0] < 1 && datosDer[0] > -1)) || (((datosDer[1] > -1 && datosDer[1] < 1))) || (((datosDer[2] > -1 && datosDer[2] < 1)))) {
-      lcd.clear();
-      Serial.println("Neutral y ");
-    }
-    if (datosDer[0] > 1) {
-      Serial.println("Abajo");
-    }
-    else if (datosDer[0] < -1) {
-      Serial.println("Arriba");
-    }
-    else if (datosDer[1] > 1) {
-      Serial.println("GiraIzq");
-    }
-    else if (datosDer[1] < -1) {
-      Serial.println("GiraDer");
-    }
-    else if (datosDer[2] > 1) {
-      Serial.println("Izq");
-    }
-    else if (datosDer[2] < -1) {
-      Serial.println("Der");
-    }
+    interpretaManoDerecha();
 
   }
   //Mano Izquierda en posicion de GiraIzq, datosIzq[1] es negativo
@@ -284,28 +197,7 @@ void interpretaDatos() {
     validaPos[1] = true;
     validaPos[2] = false;
 
-    if (((datosDer[0] < 1 && datosDer[0] > -1)) || (((datosDer[1] > -1 && datosDer[1] < 1))) || (((datosDer[2] > -1 && datosDer[2] < 1)))) {
-      lcd.clear();
-      Serial.println("Neutral");
-    }
-    if (datosDer[0] > 1) {
-      Serial.println("Abajo");
-    }
-    else if (datosDer[0] < -1) {
-      Serial.println("Arriba");
-    }
-    else if (datosDer[1] > 1) {
-      Serial.println("GiraIzq");
-    }
-    else if (datosDer[1] < -1) {
-      Serial.println("GiraDer");
-    }
-    else if (datosDer[2] > 1) {
-      Serial.println("Izq");
-    }
-    else if (datosDer[2] < -1) {
-      Serial.println("Der");
-    }
+    interpretaManoDerecha();
   }
   //Mano Izquierda en posicion de Izq, datosIzq[2] es positivo
   else if (datosIzq[2] > 1)
@@ -319,28 +211,7 @@ void interpretaDatos() {
     validaPos[1] = false;
     validaPos[2] = true;
 
-    if (((datosDer[0] < 1 && datosDer[0] > -1)) || (((datosDer[1] > -1 && datosDer[1] < 1))) || (((datosDer[2] > -1 && datosDer[2] < 1)))) {
-      lcd.clear();
-      Serial.println("Neutral");
-    }
-    if (datosDer[0] > 1) {
-      Serial.println("Abajo");
-    }
-    else if (datosDer[0] < -1) {
-      Serial.println("Arriba");
-    }
-    else if (datosDer[1] > 1) {
-      Serial.println("GiraIzq");
-    }
-    else if (datosDer[1] < -1) {
-      Serial.println("GiraDer");
-    }
-    else if (datosDer[2] > 1) {
-      Serial.println("Izq");
-    }
-    else if (datosDer[2] < -1) {
-      Serial.println("Der");
-    }
+    interpretaManoDerecha();
 
   }
   //Mano Izquierda en posicion de Der, datosIzq[2] es negativo
@@ -355,27 +226,66 @@ void interpretaDatos() {
     validaPos[1] = false;
     validaPos[2] = true;
 
-    if (((datosDer[0] < 1 && datosDer[0] > -1)) || (((datosDer[1] > -1 && datosDer[1] < 1))) || (((datosDer[2] > -1 && datosDer[2] < 1)))) {
+    interpretaManoDerecha();
+  }
+  else {
+    validaPos[0] = false;
+    validaPos[1] = false;
+    validaPos[2] = false;
+  }
+}
+
+void interpretaManoDerecha() {
+   if (((datosDer[0] < 1 && datosDer[0] > -1) && !(validaPosDerecha[0])) && 
+   ((datosDer[1] > -1 && datosDer[1] < 1) && !(validaPosDerecha[1])) && 
+   ((datosDer[2] > -1 && datosDer[2] < 1) && !(validaPosDerecha[2]))) 
+   {
       lcd.clear();
       Serial.println("Neutral");
     }
-    if (datosDer[0] > 1) {
+   else if (datosDer[0] > 1  ) {
       Serial.println("Abajo");
+      validaPosDerecha[0] = true;
+      validaPosDerecha[1] = false;
+      validaPosDerecha[2] = false;
     }
-    else if (datosDer[0] < -1) {
+    else if (datosDer[0] < -1) 
+    {
       Serial.println("Arriba");
+      validaPosDerecha[0] = true;
+      validaPosDerecha[1] = false;
+      validaPosDerecha[2] = false;
     }
     else if (datosDer[1] > 1) {
       Serial.println("GiraIzq");
+      validaPosDerecha[0] = false;
+      validaPosDerecha[1] = true;
+      validaPosDerecha[2] = false;
     }
     else if (datosDer[1] < -1) {
       Serial.println("GiraDer");
+      validaPosDerecha[0] = false;
+      validaPosDerecha[1] = true;
+      validaPosDerecha[2] = false;
     }
     else if (datosDer[2] > 1) {
-      Serial.println("Izq");
+      Serial.println("Izqui");
+      validaPosDerecha[0] = false;
+      validaPosDerecha[1] = false;
+      validaPosDerecha[2] = true;
     }
     else if (datosDer[2] < -1) {
       Serial.println("Der");
+      validaPosDerecha[0] = false;
+      validaPosDerecha[1] = false;
+      validaPosDerecha[2] = true;
+
     }
-  }
+    else {
+      validaPosDerecha[0] = false;
+      validaPosDerecha[1] = false;
+      validaPosDerecha[2] = false;
+      
+    }
 }
+
